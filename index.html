@@ -1,0 +1,1069 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>인생네컷 | โฟโต้บูธ 4 ช่อง</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#fff9fc;color:#50384c;font-family:Arial,sans-serif}
+main{max-width:720px;margin:auto;padding:16px}
+h1{font-size:27px;margin:8px 0}
+h2{font-size:20px;margin:0 0 15px}
+small{display:block;font-size:12px;font-weight:400;color:#786b79;margin-top:4px}
+section{background:white;border:1px solid #efdfeb;border-radius:18px;padding:16px;margin:16px 0}
+button,input,select{font:inherit}
+button{min-height:44px;border:1px solid #e4d4e4;border-radius:10px;background:white;color:#50384c;padding:8px;cursor:pointer;touch-action:manipulation}
+button.active{border:2px solid #9366bc;background:#f5eaff}
+button:disabled{opacity:.4}
+.primary{background:#8051a8;color:white}
+.primary small{color:#fff}
+.grid{display:grid;gap:8px}
+.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.six{grid-template-columns:repeat(6,minmax(0,1fr))}
+.upload{height:90px;overflow:hidden;background:#fff5fa;padding:4px}
+.upload img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+.swatches{display:flex;flex-wrap:wrap;gap:10px}
+.swatch{width:36px;height:36px;min-height:36px;border-radius:50%;padding:0}
+.swatch.active{outline:2px solid #8051a8;outline-offset:2px}
+.preview{background:#f4eef4;border-radius:14px;padding:14px;text-align:center}
+canvas{display:block;margin:auto;width:100%;height:auto}
+#editor{max-width:250px;touch-action:none;user-select:none}
+#final{max-width:190px}
+#savedImage{display:block;width:100%;max-width:250px;margin:12px auto;border-radius:8px}
+.panel{border:1px solid #e4d4e4;border-radius:12px;padding:12px;margin:12px 0}
+.line{display:flex;align-items:center;gap:10px;margin:10px 0}
+.line label{flex:1}
+.line button{min-width:44px}
+input[type=text],select{width:100%;padding:12px;border:1px solid #dfcfdf;border-radius:9px;background:white;color:#50384c}
+.field{margin:14px 0}
+.field label{display:block;margin-bottom:8px}
+.emoji{font-size:25px;padding:3px}
+.hint{font-size:13px;line-height:1.5}
+#status{white-space:pre-line;font-size:13px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+
+<h1>📸 나만의 인생네컷
+<small>โฟโต้บูธ 4 ช่องสไตล์ของเรา</small></h1>
+<p>사진을 넣고, 꾸미고, 친구들과 추억을 남겨 보세요!
+<small>เพิ่มรูป ตกแต่ง และเก็บความทรงจำกับเพื่อน ๆ!</small></p>
+
+<section>
+<h2>1. 사진 넣기<small>เพิ่มรูปภาพ</small></h2>
+<div id="uploads" class="grid four"></div>
+<input id="file" type="file" accept="image/*" hidden>
+<p class="hint">사진 칸을 누르면 사진을 넣거나 바꿀 수 있어요.
+<small>แตะช่องรูปเพื่อเพิ่มหรือเปลี่ยนรูปภาพ</small></p>
+</section>
+
+<section>
+<h2>2. 프레임 꾸미기<small>ตกแต่งกรอบรูป</small></h2>
+<p>색상<small>สี</small></p>
+<div id="colors" class="swatches"></div>
+<p>패턴<small>ลวดลาย</small></p>
+<div id="patterns" class="grid three"></div>
+</section>
+
+<section>
+<h2>3. 사진과 스티커 꾸미기
+<small>ตกแต่งรูปภาพและสติกเกอร์</small></h2>
+<p class="hint">사진이나 스티커를 누르고 움직여 보세요.
+<small>แตะรูปภาพหรือสติกเกอร์แล้วลากเพื่อย้ายตำแหน่ง</small></p>
+
+<div class="preview">
+<canvas id="editor" width="600" height="1420"></canvas>
+</div>
+
+<div class="line" style="justify-content:flex-end">
+<button id="undo">↶ 실행 취소<small>เลิกทำ</small></button>
+</div>
+
+<div id="panel" class="panel" hidden>
+<strong id="selection"></strong>
+<div class="line">
+<label>크기<small>ขนาด</small></label>
+<button id="smaller">−</button>
+<span id="sizeValue"></span>
+<button id="larger">+</button>
+</div>
+
+<div id="photoTools">
+<label>사진 필터<small>ฟิลเตอร์รูปภาพ</small></label>
+<select id="filters"></select>
+</div>
+
+<div id="stickerTools">
+<div class="line">
+<label>회전<small>หมุน</small></label>
+<button id="left">↶</button>
+<span id="angle"></span>
+<button id="right">↷</button>
+</div>
+<button id="remove">스티커 삭제<small>ลบสติกเกอร์</small></button>
+</div>
+</div>
+
+<p>스티커 추가<small>เพิ่มสติกเกอร์</small></p>
+<div id="categories" class="grid three"></div>
+<div id="stickers" class="grid six" style="margin-top:12px"></div>
+</section>
+
+<section>
+<h2>4. 문구 넣기<small>เพิ่มข้อความ</small></h2>
+<div class="field">
+<label>자유 문구<small>ข้อความตามใจชอบ</small></label>
+<input id="caption" type="text" maxlength="35"
+value="우리들의 특별한 하루 ♡">
+</div>
+<div class="field">
+<label>반 / 모둠<small>ห้องเรียน / กลุ่ม</small></label>
+<input id="team" type="text" maxlength="25"
+placeholder="4/1 · 2조 / กลุ่ม 2">
+</div>
+</section>
+
+<section>
+<h2>5. 완성 및 저장<small>เสร็จสิ้นและบันทึก</small></h2>
+
+<div class="preview">
+<canvas id="final" width="600" height="1420"></canvas>
+</div>
+
+<div style="margin-top:14px">
+<button id="png" class="primary" style="width:100%;padding:14px">
+사진 저장
+<small>บันทึกรูปภาพ</small>
+</button>
+</div>
+
+<p id="status" role="status"></p>
+
+<div id="saveHelp" hidden>
+<p class="hint">
+다운로드한 사진을 찾을 수 없으면 아래 사진을 길게 눌러 저장하세요.
+<small>หากไม่พบไฟล์ที่ดาวน์โหลด ให้แตะรูปภาพด้านล่างค้างไว้ แล้วเลือกบันทึกรูปภาพ</small>
+</p>
+<img id="savedImage" alt="완성 사진 / รูปภาพที่ตกแต่งเสร็จแล้ว">
+</div>
+
+<p class="hint">
+사진은 이 기기에서만 처리됩니다.
+<small>รูปภาพจะถูกประมวลผลบนอุปกรณ์นี้เท่านั้น</small>
+</p>
+</section>
+
+</main>
+
+<script>
+"use strict";
+
+const $=id=>document.getElementById(id);
+const W=600,H=1420,PW=480,PH=265;
+const Y=[125,412,699,986];
+const editor=$("editor"),final=$("final");
+
+const palette=[
+"#f6b9d0","#b7dff8","#cdb8f0","#fff0a4",
+"#bde6cd","#262331","#ffffff","#ffb29a",
+"#e7d5b5","#b7c9e5","#e9a4b2","#9edbd8"
+];
+
+const patterns=[
+["기본","แบบเรียบ"],
+["도트","ลายจุด"],
+["체크","ลายตาราง"],
+["별","ลายดาว"],
+["하트","ลายหัวใจ"],
+["사선","ลายเฉียง"]
+];
+
+const filters=[
+["원본","ต้นฉบับ"],
+["흑백","ขาวดำ"],
+["세피아","ซีเปีย"],
+["빈티지","วินเทจ"],
+["웜톤","โทนอุ่น"],
+["쿨톤","โทนเย็น"],
+["밝게","เพิ่มความสว่าง"],
+["고대비","คอนทราสต์สูง"],
+["핑크","โทนชมพู"],
+["고채도","สีสด"],
+["비네트","ขอบมืด"]
+];
+
+const categories=[
+["하트·별","หัวใจ·ดาว",
+"💗 ❤️ 🩷 🧡 💛 💚 💙 💜 🖤 🤍 💕 💖 💘 💝 💞 💓 💟 ⭐ 🌟 ✨ 💫 🌈 ☁️ 🌙 ☀️"],
+["패션·소품","แฟชั่น·ของตกแต่ง",
+"😎 🕶️ 👓 🥸 🎩 🧢 👒 👑 🎀 💍 💎 👜 👛 🧣 👟 💄 💋 🎧 🎤 📷 📸 🪄 🎈 🎉 🎊"],
+["음식","อาหาร",
+"🍕 🍔 🍟 🌭 🍿 🍩 🍪 🍰 🎂 🧁 🍫 🍬 🍭 🍦 🍨 🍧 🍓 🍒 🍉 🍑 🍎 🍌 🥑 🍣 🍙 🍜 🍱 🍗 🍤 🥤 🧋 ☕ 🍹"],
+["동물","สัตว์",
+"🐰 🐻 🧸 🐱 🐶 🐼 🐸 🦊 🐯 🐹 🐨 🐷 🐵 🐥 🐣 🦋 🐝 🐧 🦄 🐙 🐬 🐢"],
+["꽃·자연","ดอกไม้·ธรรมชาติ",
+"🌸 🌷 🌹 🌻 🌼 💐 🍀 🌿 🌱 🍃 🍁 🍂 🌵 🌴 🌺 🌾 🌳"],
+["표정·말풍선","สีหน้า·กรอบคำพูด",
+"😂 🤣 🥰 😍 😘 😜 🤪 😇 🥳 🤩 😱 😭 😴 😺 🙈 👍 ✌️ 🫶 👏 💯 ❗ ❓ 💬 💭 🗯️"],
+["학교·놀이","โรงเรียน·กิจกรรม",
+"📚 📖 ✏️ 📝 🎓 🏫 🎒 🏆 🥇 ⚽ 🏀 🏸 🎮 🎲 🎯 🎨 🎵 🎶 🎸 🎹 🎬 🎪 🎡 🎢"]
+];
+
+let photos=Array(4).fill(null);
+let stickers=[],bg=palette[0],pat=0;
+let caption=$("caption").value,team="";
+let sel=null,uid=0,uploadIndex=0,category=0;
+let history=[],drag=null;
+let cache=new WeakMap();
+let pending=false;
+let savedURL=null;
+
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+
+function status(ko,th){
+ $("status").textContent=ko+"\n"+th;
+}
+
+function invalidateSaved(){
+ $("saveHelp").hidden=true;
+ $("savedImage").removeAttribute("src");
+ $("status").textContent="";
+ if(savedURL){
+ URL.revokeObjectURL(savedURL);
+ savedURL=null;
+ }
+}
+
+function snapshot(){
+ invalidateSaved();
+ history.push({
+ photos:photos.map(p=>p?{...p}:null),
+ stickers:stickers.map(s=>({...s})),
+ bg,pat,caption,team,uid
+ });
+ if(history.length>16)history.shift();
+ $("undo").disabled=false;
+}
+
+function undo(){
+ const s=history.pop();
+ if(!s)return;
+ invalidateSaved();
+ ({photos,stickers,bg,pat,caption,team,uid}=s);
+ sel=null;
+ $("caption").value=caption;
+ $("team").value=team;
+ refresh();
+}
+
+function button(ko,th,fn){
+ const b=document.createElement("button");
+ b.textContent=ko;
+ const sm=document.createElement("small");
+ sm.textContent=th;
+ b.append(sm);
+ b.onclick=fn;
+ return b;
+}
+
+function build(){
+ palette.forEach(c=>{
+ const b=document.createElement("button");
+ b.className="swatch";
+ b.style.background=c;
+ b.dataset.color=c;
+ b.setAttribute("aria-label",c);
+ b.onclick=()=>{
+ snapshot();
+ bg=c;
+ refresh();
+ };
+ $("colors").append(b);
+ });
+
+ patterns.forEach((p,i)=>{
+ const b=button(...p,()=>{
+ snapshot();
+ pat=i;
+ refresh();
+ });
+ b.dataset.pattern=i;
+ $("patterns").append(b);
+ });
+
+ filters.forEach((f,i)=>{
+ const o=document.createElement("option");
+ o.value=i;
+ o.textContent=f[0]+" / "+f[1];
+ $("filters").append(o);
+ });
+
+ categories.forEach((c,i)=>{
+ const b=button(c[0],c[1],()=>{
+ category=i;
+ showStickers();
+ });
+ b.dataset.category=i;
+ $("categories").append(b);
+ });
+
+ showStickers();
+ refresh();
+}
+
+function showStickers(){
+ $("stickers").replaceChildren();
+
+ document.querySelectorAll("[data-category]").forEach(b=>{
+ b.classList.toggle("active",+b.dataset.category===category);
+ });
+
+ categories[category][2].split(" ").forEach(e=>{
+ const b=document.createElement("button");
+ b.className="emoji";
+ b.textContent=e;
+
+ b.onclick=()=>{
+ snapshot();
+
+ const s={
+ id:++uid,
+ emoji:e,
+ x:300,
+ y:710,
+ size:65,
+ a:0
+ };
+
+ stickers.push(s);
+ sel={type:"sticker",id:s.id};
+ refresh();
+
+ $("panel").scrollIntoView({block:"nearest"});
+ };
+
+ $("stickers").append(b);
+ });
+}
+
+function refreshUploads(){
+ $("uploads").replaceChildren();
+
+ photos.forEach((p,i)=>{
+ const b=button(
+ (i+1)+"번 사진",
+ "รูปที่ "+(i+1),
+ ()=>{
+ uploadIndex=i;
+ $("file").click();
+ }
+ );
+
+ b.className="upload";
+
+ if(p){
+ const img=document.createElement("img");
+ img.src=p.thumb;
+ img.alt="รูปที่ "+(i+1);
+ b.replaceChildren(img);
+ }
+
+ $("uploads").append(b);
+ });
+}
+
+$("file").onchange=()=>{
+ const f=$("file").files[0];
+ const i=uploadIndex;
+ $("file").value="";
+ if(!f)return;
+
+ const reader=new FileReader();
+
+ reader.onload=()=>{
+ const img=new Image();
+
+ img.onload=()=>{
+ try{
+ const scale=Math.min(
+ 1,1200/Math.max(img.width,img.height)
+ );
+
+ const c=document.createElement("canvas");
+ c.width=Math.max(1,Math.round(img.width*scale));
+ c.height=Math.max(1,Math.round(img.height*scale));
+
+ c.getContext("2d").drawImage(
+ img,0,0,c.width,c.height
+ );
+
+ const thumb=document.createElement("canvas");
+ const ts=Math.min(160/c.width,160/c.height);
+
+ thumb.width=Math.max(1,Math.round(c.width*ts));
+ thumb.height=Math.max(1,Math.round(c.height*ts));
+
+ thumb.getContext("2d").drawImage(
+ c,0,0,thumb.width,thumb.height
+ );
+
+ snapshot();
+
+ photos[i]={
+ img:c,
+ filter:0,
+ z:1,
+ x:0,
+ y:0,
+ thumb:thumb.toDataURL("image/jpeg",.65)
+ };
+
+ sel={type:"photo",i};
+ refresh();
+
+ }catch(e){
+ alert(
+ "사진을 불러올 수 없습니다.\n"+
+ "ไม่สามารถเปิดรูปภาพได้"
+ );
+ }
+ };
+
+ img.onerror=()=>alert(
+ "다른 사진을 선택해 주세요.\n"+
+ "กรุณาเลือกรูปภาพอื่น"
+ );
+
+ img.src=reader.result;
+ };
+
+ reader.onerror=()=>alert(
+ "사진을 읽을 수 없습니다.\n"+
+ "ไม่สามารถอ่านไฟล์รูปภาพได้"
+ );
+
+ reader.readAsDataURL(f);
+};
+
+function filtered(p){
+ if(!p.filter||p.filter===10)return p.img;
+
+ let m=cache.get(p.img);
+
+ if(!m){
+ m=new Map();
+ cache.set(p.img,m);
+ }
+
+ if(m.has(p.filter))return m.get(p.filter);
+
+ const c=document.createElement("canvas");
+ c.width=p.img.width;
+ c.height=p.img.height;
+
+ const ctx=c.getContext("2d");
+ ctx.drawImage(p.img,0,0);
+
+ const data=ctx.getImageData(0,0,c.width,c.height);
+ const d=data.data;
+
+ for(let i=0;i<d.length;i+=4){
+ let r=d[i],v=d[i+1],b=d[i+2];
+ const l=.299*r+.587*v+.114*b;
+
+ switch(p.filter){
+ case 1:
+ r=v=b=l;
+ break;
+
+ case 2:
+ [r,v,b]=[
+ .393*r+.769*v+.189*b,
+ .349*r+.686*v+.168*b,
+ .272*r+.534*v+.131*b
+ ];
+ break;
+
+ case 3:
+ r=(l+(r-l)*.38)*.70+42;
+ v=(l+(v-l)*.38)*.70+38;
+ b=(l+(b-l)*.38)*.70+35;
+ break;
+
+ case 4:
+ r=r*1.12+22;
+ v=v*1.04+9;
+ b=b*.76;
+ break;
+
+ case 5:
+ r=r*.77;
+ v=v*.98+8;
+ b=b*1.12+27;
+ break;
+
+ case 6:
+ r=255*Math.pow(r/255,.65);
+ v=255*Math.pow(v/255,.65);
+ b=255*Math.pow(b/255,.65);
+ break;
+
+ case 7:
+ r=(r-128)*1.65+128;
+ v=(v-128)*1.65+128;
+ b=(b-128)*1.65+128;
+ break;
+
+ case 8:
+ r=r*.80+50;
+ v=v*.80+7;
+ b=b*.82+45;
+ break;
+
+ case 9:
+ r=l+(r-l)*1.85;
+ v=l+(v-l)*1.85;
+ b=l+(b-l)*1.85;
+ break;
+ }
+
+ d[i]=r;
+ d[i+1]=v;
+ d[i+2]=b;
+ }
+
+ ctx.putImageData(data,0,0);
+
+ if(m.size>=3)m.delete(m.keys().next().value);
+
+ m.set(p.filter,c);
+ return c;
+}
+
+function dimensions(p){
+ const scale=Math.max(
+ PW/p.img.width,
+ PH/p.img.height
+ )*p.z;
+
+ return [
+ p.img.width*scale,
+ p.img.height*scale
+ ];
+}
+
+function clampPhoto(p){
+ const [w,h]=dimensions(p);
+
+ p.x=clamp(
+ p.x,
+ -Math.max(0,w-PW)/2,
+ Math.max(0,w-PW)/2
+ );
+
+ p.y=clamp(
+ p.y,
+ -Math.max(0,h-PH)/2,
+ Math.max(0,h-PH)/2
+ );
+}
+
+function drawPattern(ctx){
+ ctx.save();
+
+ ctx.globalAlpha=.20;
+ ctx.fillStyle=bg==="#ffffff"?"#b9a6b7":"#ffffff";
+ ctx.strokeStyle=ctx.fillStyle;
+
+ if(pat===1){
+ for(let y=15;y<H;y+=42)
+ for(let x=15;x<W;x+=42){
+ ctx.beginPath();
+ ctx.arc(x,y,6,0,Math.PI*2);
+ ctx.fill();
+ }
+ }
+
+ if(pat===2){
+ for(let y=0;y<H;y+=44)
+ for(let x=0;x<W;x+=44)
+ if((x/44+y/44)%2===0)
+ ctx.fillRect(x,y,44,44);
+ }
+
+ if(pat===3||pat===4){
+ ctx.font="24px sans-serif";
+ for(let y=30;y<H;y+=65)
+ for(let x=10;x<W;x+=65)
+ ctx.fillText(pat===3?"★":"♥",x,y);
+ }
+
+ if(pat===5){
+ ctx.lineWidth=10;
+ for(let x=-H;x<W;x+=48){
+ ctx.beginPath();
+ ctx.moveTo(x,0);
+ ctx.lineTo(x+H,H);
+ ctx.stroke();
+ }
+ }
+
+ ctx.restore();
+}
+
+function draw(canvas,editing){
+ const ctx=canvas.getContext("2d");
+
+ ctx.clearRect(0,0,W,H);
+ ctx.fillStyle=bg;
+ ctx.fillRect(0,0,W,H);
+
+ drawPattern(ctx);
+
+ const ink=bg==="#262331"?"#ffffff":"#50384c";
+
+ ctx.fillStyle=ink;
+ ctx.textAlign="center";
+ ctx.textBaseline="alphabetic";
+ ctx.font="bold 38px Arial,sans-serif";
+ ctx.fillText("PHOTO FOUR",300,76);
+
+ photos.forEach((p,i)=>{
+ const y=Y[i];
+
+ ctx.save();
+ ctx.beginPath();
+ ctx.rect(60,y,PW,PH);
+ ctx.clip();
+
+ ctx.fillStyle="#fff8fc";
+ ctx.fillRect(60,y,PW,PH);
+
+ if(p){
+ clampPhoto(p);
+ const [w,h]=dimensions(p);
+
+ ctx.drawImage(
+ filtered(p),
+ 60+(PW-w)/2+p.x,
+ y+(PH-h)/2+p.y,
+ w,h
+ );
+
+ if(p.filter===10){
+ ctx.save();
+
+ ctx.translate(60+PW/2,y+PH/2);
+ ctx.scale(PW/2,PH/2);
+
+ const g=ctx.createRadialGradient(
+ 0,0,.18,0,0,1.42
+ );
+
+ g.addColorStop(0,"rgba(0,0,0,0)");
+ g.addColorStop(.38,"rgba(0,0,0,0)");
+ g.addColorStop(.7,"rgba(0,0,0,.35)");
+ g.addColorStop(1,"rgba(0,0,0,.85)");
+
+ ctx.fillStyle=g;
+ ctx.fillRect(-1,-1,2,2);
+
+ ctx.restore();
+ }
+
+ }else{
+ ctx.fillStyle="#9e8296";
+ ctx.font="28px sans-serif";
+ ctx.fillText((i+1)+"번 사진",300,y+PH/2-4);
+ ctx.font="23px sans-serif";
+ ctx.fillText("รูปที่ "+(i+1),300,y+PH/2+32);
+ }
+
+ ctx.restore();
+ });
+
+ ctx.fillStyle=ink;
+ ctx.font="28px sans-serif";
+ ctx.fillText(caption,300,1310,540);
+
+ ctx.font="23px sans-serif";
+ ctx.fillText(team,300,1350,540);
+
+ ctx.font="16px Arial,sans-serif";
+ ctx.fillText("✦ LIFE IN FOUR CUTS ✦",300,1390);
+
+ stickers.forEach(s=>{
+ ctx.save();
+
+ ctx.translate(s.x,s.y);
+ ctx.rotate(s.a*Math.PI/180);
+ ctx.textAlign="center";
+ ctx.textBaseline="middle";
+ ctx.font=s.size+"px Arial, sans-serif";
+ ctx.fillText(s.emoji,0,0);
+
+ ctx.restore();
+ });
+
+ if(editing&&sel){
+ ctx.strokeStyle="#3069ed";
+ ctx.lineWidth=5;
+
+ if(sel.type==="photo"){
+ ctx.strokeRect(60,Y[sel.i],PW,PH);
+ }else{
+ const s=stickers.find(x=>x.id===sel.id);
+
+ if(s){
+ ctx.save();
+ ctx.translate(s.x,s.y);
+ ctx.rotate(s.a*Math.PI/180);
+
+ ctx.strokeRect(
+ -s.size*.65,
+ -s.size*.65,
+ s.size*1.3,
+ s.size*1.3
+ );
+
+ ctx.restore();
+ }
+ }
+ }
+}
+
+function selected(){
+ if(!sel)return null;
+
+ return sel.type==="photo"
+ ?photos[sel.i]
+ :stickers.find(s=>s.id===sel.id);
+}
+
+function panel(){
+ const p=selected();
+
+ $("panel").hidden=!p;
+ if(!p)return;
+
+ const isPhoto=sel.type==="photo";
+
+ $("photoTools").hidden=!isPhoto;
+ $("stickerTools").hidden=isPhoto;
+
+ $("selection").textContent=isPhoto
+ ?(sel.i+1)+"번 사진 편집 중"
+ :"스티커 편집 중";
+
+ const sm=document.createElement("small");
+
+ sm.textContent=isPhoto
+ ?"กำลังแก้ไขรูปที่ "+(sel.i+1)
+ :"กำลังแก้ไขสติกเกอร์";
+
+ $("selection").append(sm);
+
+ $("sizeValue").textContent=Math.round(
+ isPhoto?p.z*100:p.size/65*100
+ )+"%";
+
+ if(isPhoto)
+ $("filters").value=p.filter;
+ else
+ $("angle").textContent=p.a+"°";
+}
+
+function refresh(){
+ refreshUploads();
+
+ document.querySelectorAll("[data-color]").forEach(b=>
+ b.classList.toggle("active",b.dataset.color===bg)
+ );
+
+ document.querySelectorAll("[data-pattern]").forEach(b=>
+ b.classList.toggle("active",+b.dataset.pattern===pat)
+ );
+
+ $("undo").disabled=!history.length;
+
+ panel();
+ render();
+}
+
+function render(){
+ draw(editor,true);
+
+ if(!pending){
+ pending=true;
+
+ requestAnimationFrame(()=>{
+ pending=false;
+ draw(final,false);
+ });
+ }
+}
+
+function resize(delta){
+ const p=selected();
+ if(!p)return;
+
+ snapshot();
+
+ if(sel.type==="photo"){
+ p.z=clamp(p.z+delta*.1,1,3);
+ clampPhoto(p);
+ }else{
+ p.size=clamp(p.size+delta*6.5,26,195);
+ }
+
+ panel();
+ render();
+}
+
+function rotate(delta){
+ const s=selected();
+
+ if(!s||sel.type!=="sticker")return;
+
+ snapshot();
+
+ s.a=((s.a+delta+180)%360+360)%360-180;
+
+ panel();
+ render();
+}
+
+$("smaller").onclick=()=>resize(-1);
+$("larger").onclick=()=>resize(1);
+$("left").onclick=()=>rotate(-15);
+$("right").onclick=()=>rotate(15);
+$("undo").onclick=undo;
+
+$("filters").onchange=()=>{
+ const p=selected();
+
+ if(!p||sel.type!=="photo")return;
+
+ snapshot();
+ p.filter=+$("filters").value;
+ render();
+};
+
+$("remove").onclick=()=>{
+ if(!sel||sel.type!=="sticker")return;
+
+ snapshot();
+
+ stickers=stickers.filter(s=>s.id!==sel.id);
+ sel=null;
+
+ refresh();
+};
+
+function point(e){
+ const r=editor.getBoundingClientRect();
+
+ return {
+ x:(e.clientX-r.left)*W/r.width,
+ y:(e.clientY-r.top)*H/r.height
+ };
+}
+
+editor.addEventListener("pointerdown",e=>{
+ if(!e.isPrimary)return;
+
+ e.preventDefault();
+
+ const p=point(e);
+ sel=null;
+
+ for(let i=stickers.length-1;i>=0;i--){
+ const s=stickers[i];
+
+ if(Math.hypot(p.x-s.x,p.y-s.y)
+ <=Math.max(45,s.size*.85)){
+ sel={type:"sticker",id:s.id};
+ break;
+ }
+ }
+
+ if(!sel){
+ const i=Y.findIndex(y=>
+ p.x>=60&&p.x<=540&&
+ p.y>=y&&p.y<=y+PH
+ );
+
+ if(i>=0&&photos[i])
+ sel={type:"photo",i};
+ }
+
+ const s=selected();
+
+ if(s){
+ drag={
+ id:e.pointerId,
+ start:p,
+ x:s.x,
+ y:s.y,
+ moved:false
+ };
+
+ editor.setPointerCapture(e.pointerId);
+ }
+
+ panel();
+ render();
+});
+
+editor.addEventListener("pointermove",e=>{
+ if(!drag||e.pointerId!==drag.id)return;
+
+ e.preventDefault();
+
+ const s=selected();
+ if(!s)return;
+
+ const p=point(e);
+ const dx=p.x-drag.start.x;
+ const dy=p.y-drag.start.y;
+
+ if(!drag.moved){
+ if(Math.hypot(dx,dy)<7)return;
+
+ snapshot();
+ drag.moved=true;
+ }
+
+ s.x=drag.x+dx;
+ s.y=drag.y+dy;
+
+ if(sel.type==="photo"){
+ clampPhoto(s);
+ }else{
+ s.x=clamp(s.x,0,W);
+ s.y=clamp(s.y,0,H);
+ }
+
+ render();
+});
+
+function endDrag(e){
+ if(drag&&drag.id===e.pointerId){
+ drag=null;
+
+ if(editor.hasPointerCapture(e.pointerId))
+ editor.releasePointerCapture(e.pointerId);
+
+ render();
+ }
+}
+
+["pointerup","pointercancel","lostpointercapture"]
+.forEach(ev=>editor.addEventListener(ev,endDrag));
+
+editor.addEventListener("touchmove",e=>{
+ if(drag)e.preventDefault();
+},{passive:false});
+
+$("caption").onfocus=snapshot;
+$("team").onfocus=snapshot;
+
+$("caption").oninput=()=>{
+ invalidateSaved();
+ caption=$("caption").value;
+ render();
+};
+
+$("team").oninput=()=>{
+ invalidateSaved();
+ team=$("team").value;
+ render();
+};
+
+function ready(){
+ if(photos.some(p=>!p)){
+ status(
+ "사진 4장을 모두 넣어 주세요.",
+ "กรุณาเพิ่มรูปภาพให้ครบ 4 รูป"
+ );
+ return false;
+ }
+
+ draw(final,false);
+ return true;
+}
+
+$("png").onclick=()=>{
+ if(!ready())return;
+
+ try{
+ invalidateSaved();
+
+ const dataURL=final.toDataURL("image/png");
+
+ if(dataURL==="data:,")
+ throw new Error("Image export failed");
+
+ const raw=atob(dataURL.split(",")[1]);
+
+ const bytes=Uint8Array.from(
+ raw,c=>c.charCodeAt(0)
+ );
+
+ const blob=new Blob(
+ [bytes],
+ {type:"image/png"}
+ );
+
+ savedURL=URL.createObjectURL(blob);
+
+ const groupName=team.trim()
+ .replace(/[\\/:*?"<>|]/g,"-")
+ .replace(/\s+/g,"_");
+
+ const filename=groupName
+ ?"PHOTO4_"+groupName+".png"
+ :"PHOTO4.png";
+
+ $("savedImage").src=dataURL;
+ $("saveHelp").hidden=false;
+
+ const link=document.createElement("a");
+ link.href=savedURL;
+ link.download=filename;
+
+ document.body.appendChild(link);
+ link.click();
+ link.remove();
+
+ status(
+ "다운로드를 확인하세요.",
+ "กรุณาตรวจสอบไฟล์ที่ดาวน์โหลด"
+ );
+
+ }catch(error){
+ status(
+ "사진 저장에 실패했습니다. 다시 시도해 주세요.",
+ "ไม่สามารถบันทึกรูปภาพได้ กรุณาลองอีกครั้ง"
+ );
+ }
+};
+
+window.addEventListener("pageshow",()=>{
+ render();
+});
+
+document.addEventListener("visibilitychange",()=>{
+ if(!document.hidden)render();
+});
+
+build();
+
+</script>
+</body>
+</html>
