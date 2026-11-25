@@ -1062,8 +1062,271 @@ document.addEventListener("visibilitychange",()=>{
  if(!document.hidden)render();
 });
 
-build();
+
+const storageKey = "photo4-v63";
+let db = null;
+let restoring = true;
+let saveTimer = null;
+let revision = 0;
+
+const autoBox = document.createElement("div");
+autoBox.style.cssText =
+ "background:white;border:1px solid #efdfeb;border-radius:12px;padding:12px;margin:12px 0";
+
+autoBox.innerHTML = `
+<div id="autoStatus" style="font-size:13px">
+자동 저장 준비 중
+<small>กำลังเตรียมระบบบันทึกอัตโนมัติ</small>
+</div>
+<button id="resetProject" style="width:100%;margin-top:8px">
+새로 만들기
+<small>สร้างใหม่</small>
+</button>
+`;
+
+document.querySelector("main h1").after(autoBox);
+
+function autoStatus(ko,th){
+ const el = $("autoStatus");
+ el.textContent = ko;
+ const sm = document.createElement("small");
+ sm.textContent = th;
+ el.append(sm);
+}
+
+function openStorage(){
+ return new Promise((resolve,reject)=>{
+ const req = indexedDB.open(storageKey,1);
+
+ req.onupgradeneeded = ()=>{
+ req.result.createObjectStore("projects");
+ };
+
+ req.onsuccess = ()=>resolve(req.result);
+ req.onerror = ()=>reject(req.error);
+ req.onblocked = ()=>reject(new Error("Blocked"));
+ });
+}
+
+function writeProject(data){
+ return new Promise((resolve,reject)=>{
+ const tx = db.transaction("projects","readwrite");
+ tx.objectStore("projects").put(data,"current");
+ tx.oncomplete = resolve;
+ tx.onerror = ()=>reject(tx.error);
+ tx.onabort = ()=>reject(tx.error);
+ });
+}
+
+function readProject(){
+ return new Promise((resolve,reject)=>{
+ const tx = db.transaction("projects","readonly");
+ const req = tx.objectStore("projects").get("current");
+ req.onsuccess = ()=>resolve(req.result);
+ req.onerror = ()=>reject(req.error);
+ });
+}
+
+const imageCache = new WeakMap();
+
+function photoData(p){
+ if(!p)return null;
+
+ if(!imageCache.has(p.img)){
+ imageCache.set(
+ p.img,
+ p.img.toDataURL("image/jpeg",.95)
+ );
+ }
+
+ return {
+ src:imageCache.get(p.img),
+ filter:p.filter,
+ z:p.z,
+ x:p.x,
+ y:p.y,
+ thumb:p.thumb
+ };
+}
+
+async function saveProject(){
+ if(restoring||!db)return;
+
+ const currentRevision = ++revision;
+
+ try{
+ const data = {
+ photos:photos.map(photoData),
+ stickers:stickers.map(s=>({...s})),
+ bg,pat,caption,team,uid
+ };
+
+ await writeProject(data);
+
+ if(currentRevision===revision){
+ autoStatus(
+ "자동 저장 완료",
+ "บันทึกอัตโนมัติแล้ว"
+ );
+ }
+
+ }catch(e){
+ autoStatus(
+ "자동 저장 실패 — 사진을 직접 저장하세요.",
+ "บันทึกอัตโนมัติไม่สำเร็จ กรุณาบันทึกรูปภาพด้วยตนเอง"
+ );
+ }
+}
+
+function scheduleSave(){
+ if(restoring||!db)return;
+
+ clearTimeout(saveTimer);
+
+ autoStatus(
+ "자동 저장 중…",
+ "กำลังบันทึกอัตโนมัติ…"
+ );
+
+ saveTimer = setTimeout(saveProject,350);
+}
+
+function restorePhoto(p){
+ if(!p)return Promise.resolve(null);
+
+ return new Promise((resolve,reject)=>{
+ const img = new Image();
+
+ img.onload = ()=>{
+ const c = document.createElement("canvas");
+ c.width = img.width;
+ c.height = img.height;
+ c.getContext("2d").drawImage(img,0,0);
+
+ imageCache.set(c,p.src);
+
+ resolve({
+ img:c,
+ filter:p.filter,
+ z:p.z,
+ x:p.x,
+ y:p.y,
+ thumb:p.thumb
+ });
+ };
+
+ img.onerror = reject;
+ img.src = p.src;
+ });
+}
+
+const originalRender = render;
+
+render = function(){
+ originalRender();
+ scheduleSave();
+};
+
+$("resetProject").onclick = async ()=>{
+ const yes = confirm(
+ "기존 작업을 모두 지우고 새로 만들까요?\n"+
+ "ต้องการลบงานเดิมทั้งหมดและสร้างใหม่หรือไม่?"
+ );
+
+ if(!yes)return;
+
+ clearTimeout(saveTimer);
+ restoring = true;
+ revision++;
+
+ photos = Array(4).fill(null);
+ stickers = [];
+ bg = palette[0];
+ pat = 0;
+ caption = "우리들의 특별한 하루 ♡";
+ team = "";
+ uid = 0;
+ sel = null;
+ drag = null;
+ history = [];
+ cache = new WeakMap();
+
+ $("caption").value = caption;
+ $("team").value = team;
+
+ invalidateSaved();
+ refresh();
+
+ restoring = false;
+ await saveProject();
+};
+
+document.addEventListener("visibilitychange",()=>{
+ if(document.hidden){
+ clearTimeout(saveTimer);
+ saveProject();
+ }
+});
+
+window.addEventListener("pagehide",()=>{
+ clearTimeout(saveTimer);
+ saveProject();
+});
+
+async function startApp(){
+ const main = document.querySelector("main");
+ main.inert = true;
+
+ build();
+
+ try{
+ db = await openStorage();
+ const saved = await readProject();
+
+ if(saved){
+ photos = await Promise.all(
+ saved.photos.map(restorePhoto)
+ );
+
+ stickers = saved.stickers;
+ bg = saved.bg;
+ pat = saved.pat;
+ caption = saved.caption;
+ team = saved.team;
+ uid = saved.uid;
+
+ $("caption").value = caption;
+ $("team").value = team;
+
+ refresh();
+
+ autoStatus(
+ "이전 작업을 복원했습니다.",
+ "กู้คืนงานเดิมแล้ว"
+ );
+
+ }else{
+ autoStatus(
+ "자동 저장 준비 완료",
+ "ระบบบันทึกอัตโนมัติพร้อมใช้งาน"
+ );
+ }
+
+ }catch(e){
+ autoStatus(
+ "자동 저장을 사용할 수 없습니다.",
+ "ไม่สามารถใช้ระบบบันทึกอัตโนมัติได้"
+ );
+
+ }finally{
+ restoring = false;
+ main.inert = false;
+ }
+}
+
+startApp();
 
 </script>
 </body>
 </html>
+
