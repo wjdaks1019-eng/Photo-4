@@ -1084,7 +1084,7 @@ autoBox.innerHTML = `
 </button>
 `;
 
-document.querySelector("main h1").after(autoBox);
+document.querySelector("main").appendChild(autoBox);
 document.querySelector("main").appendChild($("resetProject"));
 
 function autoStatus(ko,th){
